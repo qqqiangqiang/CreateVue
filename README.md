@@ -1,2 +1,6 @@
-# CreateVue
-create、vue
+> 事实上，Vue-cli生成的项目中，<template></template>标签中的内容都会被编译为render函数，render函数返回整棵虚拟节点数。
+
+### 流程
+
+#### 第一步，将虚拟DOM树渲染到真实的DOM，这个我们单独作为一个vue1.js文件来写
+#### 第二步，创建一个vue实例，同时将变化的部分映射到真实的dom，这个我们单独作为一个vue2.js文件来写
