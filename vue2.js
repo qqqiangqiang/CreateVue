@@ -1,6 +1,10 @@
 ;(function() {
 
-  // 生成虚拟dom树
+  // 创建虚拟domTree方法
+  function createVnode(tag, data, children, text) {
+    return new Vnode(tag, data, children, text);
+  }
+  // 虚拟domTree对象
   function Vnode(tag, data, children, text) {
     this.tag = tag;
     this.data = data;
@@ -34,6 +38,7 @@
     }
     return vnode.elm;
   }
+
   // 根据虚拟node中的children插入真实dom
   function createChildren(vnode, children) {
     for (var i = 0; i < children.length; i ++) {
@@ -51,38 +56,88 @@
     return vnode.elm;
   }
 
-  // template标签中的内容都会被编译为render函数
-  function render() {
-    return new Vnode(
-      // tag
-      'div',
-      // data
-      {
-        attrs: {
-          'class': 'wrapper'
-        }
+  // 初始化数据的工作
+  function initData (vm) {
+    var data = vm.$data = vm.$options.data;
+    var keys = Object.keys(data);
+    var i = keys.length;
+
+    while(i--) {
+      proxy(vm, keys[i])
+    }
+  }
+
+  // 将传过来的参数中的data加入vue实例，然后将'this.message'的变化映射到'this.data.message'
+  function proxy(vm, key) {
+    Object.defineProperty(vm, key, {
+      configurable: true,
+      enumerable: true,
+      get: function(){
+        return vm.$data[key]
       },
-      // children
-      [
-        new Vnode(
-          'p',
-          {
-            attrs: {
-              'class': 'inner'
-            }
-          },
-          [new Vnode(undefined, undefined, undefined, 'hello world')]
-        )
-      ]
-    )
+      set: function(val) {
+        vm.$data[key] = val
+      }
+    })
   }
-  // mount函数
-  function mount(el) {
-    // 转化后的虚拟node对象
-    var vnode = render();
-    patch(el, vnode)
+
+  function Vue(options) {
+    var vm = this;
+    vm.$options = options;
+    initData(vm);
+    vm.mount(document.querySelector(options.el))
   }
-  // 根据根节点插入数据
-  mount(document.querySelector('#app'))
+
+  Vue.prototype.mount = function(el) {
+    var vm = this;
+    // 生成渲染树
+    patch(el, vm.render());
+  }
+  // 更新dom节点
+  Vue.prototype.update = function() {
+
+  }
+  // 创建虚拟dom
+  Vue.prototype.render = function() {
+    var vm = this;
+    return vm.$options.render.call(vm);
+  }
+
+  var app = new Vue({
+    el: '#app',
+    data: {
+      message: 'Hello World!'
+    },
+    render() {
+      return createVnode(
+        // tag
+        'div',
+        // data
+        {
+          attrs: {
+            'class': 'wrapper'
+          }
+        },
+        // children
+        [
+          createVnode(
+            'p',
+            {
+              attrs: {
+                'class': 'inner'
+              }
+            },
+            [createVnode(undefined, undefined, undefined, this.message)]
+          )
+        ]
+      )
+    }
+  })
+
+  setTimeout(function(){
+    app.message = 'Hello Dongzhiqiang'
+  }, 2000)
+
+
 
 })()
