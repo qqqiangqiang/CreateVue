@@ -77,20 +77,6 @@
     )
   }
 
-  function initData (vm) {
-    var data = vm.$data = vm.$options.data;
-    var keys = Object.keys(data);
-
-  }
-
-  function Vue(options) {
-    var vm = this;
-    vm.$options = options;
-
-    initData(vm);
-    vm.mount(document.querySelector(options.el))
-  }
-
   // mount函数
   function mount(el) {
     // 转化后的虚拟node对象

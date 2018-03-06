@@ -85,7 +85,7 @@
     var vm = this;
     vm.$options = options;
     initData(vm);
-    vm.mount(document.querySelector(options.el))
+    vm.mount(document.querySelector(options.el));
   }
 
   Vue.prototype.mount = function(el) {
@@ -95,7 +95,8 @@
   }
   // 更新dom节点
   Vue.prototype.update = function() {
-
+    var vm = this;
+    vm.mount(document.querySelector(vm.$options.el));
   }
   // 创建虚拟dom
   Vue.prototype.render = function() {
@@ -136,6 +137,7 @@
 
   setTimeout(function(){
     app.message = 'Hello Dongzhiqiang'
+    app.update();
   }, 2000)
 
 
