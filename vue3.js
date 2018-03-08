@@ -145,6 +145,10 @@
     })
   }
 
+  /*
+  * observe
+  * 主要实现数据劫持，收集依赖、发布消息进行通知等，实现发布、订阅的主要逻辑都在此函数
+  */
 
   function observe(obj) {
     for (var key in obj) {
@@ -155,12 +159,14 @@
   function defineReactive(obj, key, val) {
     var dep = new Dep();
     Object.defineProperty(obj, key, {
+      // 收集依赖，建立一对多的关系，让多个观察者监听当前主题对象
       get: function() {
         if (Dep.target) {
           Dep.target.addDep(dep);
         }
         return val;
       },
+      // 劫持到数据变更，并发布消息进行通知
       set: function(newVal) {
         if (newVal === val) return;
         val = newVal;
@@ -172,6 +178,7 @@
 
   /*
   * Dep原型类
+  * Dep，全名 Dependency，Dep 类是用来做依赖收集的
   */
   // 全局唯一uid$1
   var  uid$1 = 0;
@@ -195,6 +202,7 @@
 
   /*
   * watcher原型类
+  * Watcher 意为观察者，它负责做的事情就是订阅 Dep ，当Dep 发出消息传递（notify）的时候，所有订阅着 Dep 的 Watchers 会进行自己的 update 操作
   */
   function Watcher (vm, exOrFn, cb) {
     this.vm = vm;
