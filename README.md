@@ -94,3 +94,205 @@ function render() {
 ```
 
 -------------------
+
+## 创建一个vue实例
+
+> 主要实现的是创建一个vue实例，当vue实例中的data值变化时能根据改变后的data更新dom节点。
+
+我们知道一个标准的vue实例代码是这样的：(摘自vue官网)
+
+```javascript
+var app = new Vue({
+  el: '#app',
+  data: {
+    message: 'Hello Vue!'
+  }
+})
+```
+那我们的目标自然也是实现一个类似的实例，只不过我们暂时在数据变化时手动去更新dom结构。下一章节我们将实现vue核心的发布/订阅模式。
+
+最终实现的代码如下：
+```javascript
+var app = new Vue({
+    el: '#app',
+    data: {
+      message: 'Hello World!'
+    },
+    render() {
+      return createElementVnode(
+        // tag
+        'div',
+        // data
+        {
+          attrs: {
+            'class': 'wrapper'
+          }
+        },
+        // children
+        [
+          createElementVnode(
+            'p',
+            {
+              attrs: {
+                'class': 'inner'
+              }
+            },
+            [createElementVnode(undefined, undefined, undefined, this.message)]
+          )
+        ]
+      )
+    }
+  })
+
+  setTimeout(function(){
+    app.message = 'Hello Dongzhiqiang'
+    app.update(app.render());
+  }, 2000)
+```
+
+
+<strong>1、首先我们先创建一个的vue原型类，我们在初始化vue实例时做的事情：始化data、首次将dom结构渲染在页面上。</strong>
+
+- 初始化data
+主要是利用```Object.defineProperty```实现```this.message```的变化能同步到```this.data.message```
+
+```javascript
+function initData(vm) {
+  var data = vm.$data = vm.$options.data;
+  var keys = Object.keys(data);
+  var i = keys.length;
+  while(i--) {
+    proxy(vm, keys[i])
+  }
+}
+
+function proxy(vm, key) {
+  Object.defineProperty(vm, key, {
+      configurable: true,
+      enumerable: true,
+      get: function(){
+        return vm.$data[key]
+      },
+      set: function(val) {
+        vm.$data[key] = val
+      }
+    })
+}
+```
+- 首次将dom结构渲染在页面上(这个函数将稍后进行讲解)
+
+```javascript
+    vm.mount(document.querySelector(options.el));
+```
+
+这一部分的整体代码如下：
+
+```javascript
+function Vue(options) {
+    var vm = this;
+    vm.$options = options;
+    initData(vm);
+    vm.mount(document.querySelector(options.el));
+  }
+```
+
+<strong>2、根据dom的变化，重新渲染相应的dom结构。</strong>
+
+上一部分我们已经实现了虚拟dom到真实dom的操作，无非就是根据vhost对象，进行一系列dom操作云云， 在vue中将所有的更新节点操作放在update函数中，本质是就根据改变数据后的vhost对象重新生成新的dom节点。
+
+-  生成vhost对象
+```javascript
+// 生成虚拟dom对象的函数，将挂载到vue的原型链上
+Vue.prototype.render = function() {
+    var vm = this;
+    return vm.$options.render.call(vm);
+  }
+```
+```javascript
+// createElementVnode
+  function Vnode(tag, data, children, text, elm) {
+    this.tag = tag;
+    this.data = data;
+    this.children = children;
+    this.text = text;
+    this.elm = elm;
+  }
+// 创建一个element虚拟dom对象
+  function createElementVnode(tag, data, children, text, elm) {
+    return new Vnode(tag, data, children, text, elm);
+  }
+```
+- 根据生成的vhost对象&对比vhost的变化，重新渲染dom
+```javascript
+Vue.prototype.update = function(vnode) {
+    var vm = this;
+    // vm.mount(document.querySelector(vm.$options.el));
+    var prevVnode = vm._vnode;
+    vm._vnode = vnode;
+    if (!prevVnode) {
+      vm.$el = vm.patch(vm.$el, vnode);
+    } else {
+      vm.$el = vm.patch(prevVnode, vnode);
+    }
+  }
+ // 更新children
+  function updateChildren(oldCh, Ch) {
+    if (sameVnode(oldCh[0], Ch[0])) {
+      patchVnode(oldCh[0], Ch[0]);
+    } else {
+      patch(oldCh[0], Ch[0]);
+    }
+  }
+
+  // 比较vnode节点，并更新dom
+  function patchVnode(oldVnode, vnode) {
+    var elm = vnode.elm = oldVnode.elm;
+    var oldCh = oldVnode.children;
+    var Ch = vnode.children;
+
+    if(!vnode.text) {
+      if (oldCh && Ch) {
+        updateChildren(oldCh, Ch);
+      }
+    } else if(oldVnode.text != vnode.text) {
+      elm.textContent = vnode.text;
+    }
+  }
+
+  function patch(oldVnode, vnode) {
+    var isRealElement = oldVnode.nodeType !== undefined;
+    if (!isRealElement && sameVnode(oldVnode, vnode)) {
+       patchVnode(oldVnode, vnode)
+    } else  {
+      if (isRealElement) {
+        oldVnode = createEmptyNodeAt(oldVnode);
+      }
+      // var elm = oldVnode.elm;
+      // var parent = elm.parentNode;
+      createElm(vnode);
+      // // parent.appendChild(elm);
+      // parent.insertBefore(Vnode.elm, elm);
+      oldVnode.elm.appendChild(vnode.elm);
+
+      return vnode.elm;
+    }
+  }
+```
+
+-------------------
+
+## 数据变化自动渲染dom
+
+> vue中的数据变化，也是应用了观察者模式，其主要数据流向如下图所示
+
+<img src="https://files.jb51.net/file_images/article/201801/2018129144258424.png?2018029144311">
+
+
+从整体上来说，data中的每一个key值都会对应相应的dep对象，这个dep对象里面收集者相应的watcher，存储在对象中的subs数组属性中，当有数据变化时，就会触发所有订阅者的watcher.
+
+![Alt text](./1521024563710.png)
+
+
+-------------------
+
+

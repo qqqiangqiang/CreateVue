@@ -82,19 +82,18 @@
   function patch(oldVnode, vnode) {
     var isRealElement = oldVnode.nodeType !== undefined;
     if (!isRealElement && sameVnode(oldVnode, vnode)) {
-      debugger
-       console.log('>>>>', oldVnode, vnode);
        patchVnode(oldVnode, vnode)
     } else  {
       if (isRealElement) {
         oldVnode = createEmptyNodeAt(oldVnode);
       }
-      // var elm = oldVnode.elm;
-      // var parent = elm.parentNode;
+      var elm = oldVnode.elm;
+      var parent = elm.parentNode;
+
       createElm(vnode);
-      // // parent.appendChild(elm);
-      // parent.insertBefore(Vnode.elm, elm);
-      oldVnode.elm.appendChild(vnode.elm);
+
+      parent.insertBefore(vnode.elm, elm);
+      parent.removeChild(elm);
 
       return vnode.elm;
     }
@@ -261,6 +260,7 @@
   })
 
   setTimeout(function(){
+    // debugger;
     app.message = 'Hello Dongzhiqiang'
     // app.update(app.render());
     console.log(app);
