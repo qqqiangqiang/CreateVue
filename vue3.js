@@ -321,15 +321,15 @@
     }
   })
 
-  // setTimeout(function() {
-  //   vm.message = 'hello';
-  //   // vm.update(vm.render())
-  // }, 1000)
+  setTimeout(function() {
+    vm.message = 'hello';
+    // vm.update(vm.render())
+  }, 1000)
 
-  // setTimeout(function() {
-  //   vm.isShow = false;
-  //   // vm.update(vm.render())
-  // }, 2000)
+  setTimeout(function() {
+    vm.isShow = false;
+    // vm.update(vm.render())
+  }, 2000)
 
 
 })()

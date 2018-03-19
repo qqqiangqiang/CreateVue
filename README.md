@@ -290,8 +290,92 @@ Vue.prototype.update = function(vnode) {
 
 从整体上来说，data中的每一个key值都会对应相应的dep对象，这个dep对象里面收集者相应的watcher，存储在对象中的subs数组属性中，当有数据变化时，就会触发所有订阅者的watcher.
 
+最终每个dep的数据结构如下图所示。
+
 ![Alt text](./1521024563710.png)
 
+我们按照代码的执行顺序来进行分析。
+
+- Observe data(主要实现数据劫持，收集依赖、发布消息进行通知等，实现发布、订阅的主要逻辑都在此函数)
+```javascript
+function Oberseve(obj) {
+  for (var key in data) {
+    defineReactive(obj, key, obj[key])
+  }
+}
+
+function defineReactive(obj, key, val) {
+  var dep = new Dep();
+  Object.defineProperty(obj, key) {
+    get: function() {
+      if (Dep.target) {
+        // 实际上是调用watcher的addDep方法，将watcher对象添加到作用域链     上的subs数组，Dep.target指向当前实际正在收集的订阅者
+        Dep.target.addDep(dep);
+      }
+      return val;
+    }
+    set: function(nval) {
+      if (nval !== val) {
+        val = nval;
+        dep.notify();
+      }
+    }
+  }
+}
+```
+- Dep，可以理解为发布者的角色，将会收集订阅者，并进行消息的发布。
+```javascript
+// 全局唯一的id,防止重复收集
+var uid$1 = 0;
+function Dep() {
+  this.id = uid$1 ++ ;
+  this.subs = [];
+}
+Dep.target = null;
+Dep.prototype.addSub = function(sub) {
+  this.subs.push(sub);
+}
+Dep.prototype.notify = function() {
+  for (var i = 0 ; i < this.subs.length; i ++) {
+    this.subs[i].update();
+  }
+}
+```
+- Watcher，负责做的事情就是订阅 Dep ，当Dep 发出消息传递（notify）的时候，所有订阅着 Dep 的 Watchers 会进行自己的 update 操作
+```javascript
+  function Watcher (vm, exOrFn, cb) {
+    this.vm = vm;
+    this.getter = exOrFn;
+    this.cb = cb;
+    // 存储所有发布者的唯一id，防止重复收集
+    this.depIds = [];
+    this.value = this.get();
+  }
+
+  Watcher.prototype.get = function() {
+    Dep.target = this;
+    var value = this.getter.call(this.vm);
+    Dep.target = null;
+    return value;
+  }
+
+  Watcher.prototype.update = function() {
+    var value = this.get();
+    if (this.value !== value) {
+      var oldValue = value;
+      this.value = value;
+      this.cb.call(this.vm, value, oldValue);
+    }
+  }
+
+  Watcher.prototype.addDep = function(dep) {
+    var id = dep.id;
+    if (this.depIds.indexOf(id) === -1) {
+      this.depIds.push(id);
+      dep.addSub(this);
+    }
+  }
+```
 
 -------------------
 
