@@ -1,4 +1,4 @@
-co/*!
+/*!
  * Vue.js v1.0.28
  * (c) 2016 Evan You
  * Released under the MIT License.
@@ -2108,6 +2108,7 @@ Dep.prototype.removeSub = function (sub) {
  */
 
 Dep.prototype.depend = function () {
+  debugger;
   Dep.target.addDep(this);
 };
 
@@ -2119,6 +2120,7 @@ Dep.prototype.notify = function () {
   // stablize the subscriber list first
   var subs = toArray(this.subs);
   for (var i = 0, l = subs.length; i < l; i++) {
+    console.log('uuuuu', subs[i].getter);
     subs[i].update();
   }
 };
@@ -2369,7 +2371,7 @@ function observe(value, vm) {
 
 function defineReactive(obj, key, val) {
   var dep = new Dep();
-
+  console.log('>>>>>>', dep);
   var property = Object.getOwnPropertyDescriptor(obj, key);
   if (property && property.configurable === false) {
     return;
@@ -2384,6 +2386,7 @@ function defineReactive(obj, key, val) {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter() {
+      debugger;
       var value = getter ? getter.call(obj) : val;
       if (Dep.target) {
         dep.depend();
@@ -3482,6 +3485,7 @@ Watcher.prototype.evaluate = function () {
  */
 
 Watcher.prototype.depend = function () {
+  debugger;
   var i = this.deps.length;
   while (i--) {
     this.deps[i].depend();
@@ -8191,7 +8195,9 @@ function stateMixin (Vue) {
     var watcher = new Watcher(owner, getter, null, {
       lazy: true
     });
+    console.log('cccc', watcher);
     return function computedGetter() {
+      debugger;
       if (watcher.dirty) {
         watcher.evaluate();
       }
