@@ -407,21 +407,11 @@
   })
 
   setTimeout(function() {
-    // debugger;
     vm.message = 'nihao';
-    // vm.update(vm.render())
   }, 1000)
 
   setTimeout(function() {
-    // debugger;
     vm.message = 'nizhenhao';
-    // vm.update(vm.render())
   }, 2000)
-
-  // setTimeout(function() {
-  //   vm.isShow = false;
-  //   // vm.update(vm.render())
-  // }, 2000)
-
 
 })()
