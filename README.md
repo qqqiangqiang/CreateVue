@@ -379,4 +379,124 @@ Dep.prototype.notify = function() {
 
 -------------------
 
+## 选项/生命周期钩子
+
+> 初始化vue实例的时候，我们可以增加各种生命周期的处理函数，如下所示：
+<br/> init
+created
+beforeCompile
+compiled
+ready
+attached
+detached
+beforeDestroy
+destroyed
+
+其实针对于这些生命周期的回调函数来说，无非就是在相应的位置处理调用相应的回调函数
+
+- _callHook
+```javascript
+Vue.prototype._callHook = function(hook) {
+    var handler = this.$options[hook];
+    handler.call(this);
+  }
+/*
+  * vue原型类
+  */
+  function Vue(options) {
+    // 存储this指针
+    var vm = this;
+    vm.$options = options;
+    // init回调，在实例开始初始化时同步调用。此时数据观测、事件和 watcher 都尚未初始化。
+    this._callHook('init');
+    // 初始化数据 => 升级 observe包装data
+    initData(vm);
+    // 初始化computed
+    initComputed(vm);
+    // 初始化时传入根节点(#app)
+    vm.mount(document.querySelector(options.el))
+  }
+```
+
+-------------------
+
+
+## computed计算属性
+
+>computed计算属性同样依赖于Object.definePropertyOf，针对于每一个计算属性将生成一个唯一的watcher(订阅者)，同时针对于每一个计算属性进行数据劫持，当尝试获取该值的时候，将会把该watcher订阅依赖的data，同时为这一组订阅再加上组件render的订阅
+
+- 在初始完data之后，开始初始化computed
+```javascript```
+/*
+  * vue原型类
+  */
+  function Vue(options) {
+    // 存储this指针
+    var vm = this;
+    vm.$options = options;
+    // init回调，在实例开始初始化时同步调用。此时数据观测、事件和 watcher 都尚未初始化。
+    this._callHook('init');
+    // 初始化数据 => 升级 observe包装data
+    initData(vm);
+    // 初始化computed
+    initComputed(vm);
+    // 初始化时传入根节点(#app)
+    vm.mount(document.querySelector(options.el))
+  }
+```
+- 获取computed参数里面的key值，然后进行数据劫持，同时为每一个key值都初始化唯一的watcher.
+
+```javascript```
+function initComputed(vm) {
+    var attrs = vm.$options.computed;
+
+    for (var key in attrs) {
+      var fun = attrs[key];
+      Object.defineProperty(vm, key, {
+        configurable: true,
+        enumerable: true,
+        get: makeComputer(vm, fun),
+        set: function() {}
+      })
+    }
+  }
+
+  function makeComputer(vm, fn) {
+    var watcher = new Watcher(vm, fn, undefined, {
+      lazy: true
+    });
+
+    return function() {
+      if (watcher.dirty) {
+        watcher.evalute();
+      }
+      if (Dep.target) {
+        watcher.depend();
+      }
+
+      return watcher.value;
+    }
+  }
+```
+- 根据computed值进行dom的渲染，同时在其依赖值变化的时候重新computed并进行dom的重新渲染。
+```javascript
+Watcher.prototype.evalute = function() {
+    var current = Dep.target;
+    // 获取computed的value值.
+    this.value = this.get();
+    // 将target指针指向render的watcher.
+    Dep.target = current;
+
+  }
+
+  Watcher.prototype.depend = function() {
+    var i = this.deps.length;
+    while(i--) {
+      this.deps[i].depend();
+    }
+  }
+```
+
+
+-------------------
 

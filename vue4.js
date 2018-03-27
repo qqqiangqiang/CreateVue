@@ -231,13 +231,13 @@
   Dep.prototype.notify = function() {
     var subs = this.subs;
     for (var i = 0; i < subs.length; i ++) {
+      console.log('>>', subs[i]);
       subs[i].update();
     }
   }
 
   Dep.prototype.depend = function() {
     Dep.target.addDep(this);
-    console.log('>>>>>>', this);
   }
 
   /*
@@ -291,9 +291,9 @@
 
   Watcher.prototype.evalute = function() {
     var current = Dep.target;
-    // 获取computed的value值
+    // 获取computed的value值.
     this.value = this.get();
-    // this.dirty = true
+    // 将target指针指向render的watcher.
     Dep.target = current;
 
   }
